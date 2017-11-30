@@ -10,8 +10,12 @@
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
     "express": "~4.15.5",
-    "jade": "~1.11.0",
+    "moment": "^2.19.3",
     "morgan": "~1.9.0",
-    "serve-favicon": "~2.4.5"
+    "pug": "^2.0.0-rc.4",
+    "sequelize": "^4.23.4",
+    "sequelize-cli": "^3.1.0",
+    "serve-favicon": "~2.4.5",
+    "sqlite": "^2.9.0"
   }
 }
