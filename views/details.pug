@@ -1,2 +1,9 @@
 extends layout
 block Content
+  include partials/formError
+  include partials/forms/patronForm
+  include partials/forms/bookForm
+  h2 Loan History
+  include partials/tables/loanTable
+
+  include partials/forms/returnForm

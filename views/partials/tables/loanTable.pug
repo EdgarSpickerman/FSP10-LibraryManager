@@ -1,0 +1,20 @@
+table
+  thead
+    tr
+      th Book
+      th Patron 
+      th Loaned on
+      th Return by 
+      th Returned on
+      th Action
+  tbody
+    tr
+      td
+        a(href='/details/books/loan.book_id') Emma
+      td
+        a(href='/details/patrons/loan.patron_id') Dave McFarland
+      td 2015-12-10
+      td 2020-10-20
+      td
+      td
+        a.button(href='/details/loans/loan.id') Return Book

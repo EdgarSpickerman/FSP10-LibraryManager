@@ -1,0 +1,17 @@
+form
+  p
+    label(for='book_id') Book
+    select#book_id(name='book_id')
+      option(value='1') Harry Potter and the Philosopher's Stone
+  p
+    label(for='patron_id') Patron
+    select#patron_id(name='patron_id')
+      option(value='1') Andrew Chalkley
+  p
+    label(for='loaned_on') Loaned on:
+    input#loaned_on(type='text', value='today', name='loaned_on')
+  p
+    label(for='return_by') Return by:
+    input#return_by(type='text', value='due', name='return_by')
+  p
+    input(type='submit', value='Create New Loan')
