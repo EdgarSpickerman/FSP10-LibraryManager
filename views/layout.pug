@@ -1,7 +1,17 @@
-doctype html
 html
   head
-    title= title
-    link(rel='stylesheet', href='/stylesheets/style.css')
+    title #{title? title:'missing'}
+    link(rel='stylesheet', href='stylesheets/style.css')
+  nav
+    ul
+      li
+        a(href='/') Home
+      li
+        a(href='/lists/books/all') Books
+      li
+        a(href='/lists/patrons/all') Patrons
+      li
+        a(href='/lists/loans/all') Loans
   body
-    block content
+    h1 #{title? title:'missing'}
+    block Content
