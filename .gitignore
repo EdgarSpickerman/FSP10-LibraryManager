@@ -20,9 +20,11 @@
 x64/
 x86/
 bld/
-[Bb]in/
+#[Bb]in/
 [Oo]bj/
 [Ll]og/
+[Mm]igrations/
+[Ss]eeders/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -191,7 +193,7 @@ _pkginfo.txt
 !*.[Cc]ache/
 
 # Others
-ClientBin/
+#ClientBin/
 ~$*
 *~
 *.dbmdl
