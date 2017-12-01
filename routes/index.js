@@ -6,11 +6,35 @@ const express = require('express'),
   Patrons = require('../models').patrons;
 
 var today = moment().format('YYYY-MM-DD');
+
 var due = moment().add(7, 'days').format('YYYY-MM-DD');
+
 const pluralToSingle = (plural) => plural.slice(0, plural.length - 1);
+
 const getData = (model, condition) => model.findAll(condition);
+
+const link = req => `/lists/${req.params.models}/all`;
+
 const handleErr = (err) => console.log(err);
-const updateModel = (model, body) => { };
+
+const handlePostErr = (err, req, res) => {
+  if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') return query(req, res, err.errors);
+  else res.sendStatus(500);
+}
+
+const updateOrCreate = (req) => {
+  if (req.query.id) {
+    if (req.params.models === 'loans') model = Loans;
+    else if (req.params.models === 'books') model = Books;
+    else if (req.params.models === 'patrons') model = Patrons;
+    return model.findById(req.params.id).then(model => model.update(req.body)).then(() => res.redirect(link(req))).catch(err => handlePostErr(err, req, res))
+  } else {
+    if (req.params.models === 'loans') model = Loans;
+    else if (req.params.models === 'books') model = Books;
+    else if (req.params.models === 'patrons') model = Patrons;
+    return model.create(req.body).then(() => res.redirect(link(req))).catch(err => handlePostErr(err,req,res))
+  }
+}
 
 const validation = (req, res, next) => {
   if (req.params.filters !== 'all' && req.params.filters !== 'overdue' && req.params.filters !== 'checked out') return next(err);
@@ -22,7 +46,7 @@ const getAvailLoans = () => {
     .then(checked => Promise.all([Books.findAll({ where: { id: { $notIn: checked } } }), Patrons.findAll()]))
 }
 
-const setProps = (data, req) => {
+const setProps = (data, req, errors) => {
   let view = {};
   if (req.params.filter) {
     view.title = req.params.filter + ' ' + req.params.models;
@@ -36,14 +60,15 @@ const setProps = (data, req) => {
     if (view.book) view.title = view.book.title;
     if (view.patron) view.title = view.patron.first_name + ' ' + view.patron.last_name;
     if (view.loan) view.title = 'Patron:Return Book';
-    console.log(view);
+    if (errors.length > 0) view.errors = errors;
   } else if (req.params.models) {
     view = { loan: {}, books: data[0], patrons: data[1], title: 'New Loan', today: today, due: due };
+    if (errors.length > 0) view.errors = errors;
   }
   return view;
 }
 
-const query = (req, res) => {
+const query = (req, res, errors) => {
   if (req.params.filter) {
     let model = Loans;
     let condition = {};
@@ -68,10 +93,13 @@ const query = (req, res) => {
       lCondition = { include: [Books, Patrons], where: { book_id: { $eq: req.params.id } } };
       model = Books;
     } else if (req.params.models === 'loans') condition = lCondition;
-    return Promise.all([model.findAll(condition), Loans.findAll(lCondition)]).then(data => setProps(data, req)).then(view => res.render('details', view)).catch(handleErr);
+    return Promise.all([model.findAll(condition), Loans.findAll(lCondition)]).then(data => setProps(data, req, errors))
+      .then(view => res.render('details', view)).catch(handleErr);
   } else if (req.params.models) {
     let view = { [pluralToSingle(req.params.models)]: {}, title: `New ${pluralToSingle(req.params.models)}` };
-    if (req.params.models === 'loans') return getAvailLoans().then(data => setProps(data, req)).then(view => res.render('forms', view)).catch(handleErr);
+    if (errors.length > 0) view.errors = errors;
+    if (req.params.models === 'loans') return getAvailLoans().then(data => setProps(data, req, errors))
+      .then(view => res.render('forms', view)).catch(handleErr);
     res.render('forms',view);
   }
 };
@@ -79,7 +107,9 @@ const query = (req, res) => {
 /***************************************************************** ROUTES *****************************************************************/
 router.get('/', (req, res) => res.render('index', { title: 'Express' }));
 router.get('/lists/:models/:filter', (req, res) => query(req, res));
-router.get('/details/:models/:id', (req, res) => query(req, res));
-router.get('/new/:models', (req, res) => query(req, res));
+router.get('/details/:models/:id', (req, res) => query(req, res, []));
+router.get('/new/:models', (req, res) => query(req, res, []));
+router.post('/new/:models', (req, res) => { });
+router.post('/details/:models/:id', (req, res) => { });
 
 module.exports = router;
