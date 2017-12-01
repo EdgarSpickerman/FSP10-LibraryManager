@@ -7,7 +7,7 @@ const express = require('express'),
 
 var today = moment().format('YYYY-MM-DD');
 var due = moment().add(7, 'days').format('YYYY-MM-DD');
-
+const pluralToSingle = (plural) => plural.slice(0, plural.length - 1);
 const getData = (model, condition) => model.findAll(condition);
 const handleErr = (err) => console.log(err);
 const updateModel = (model, body) => { };
@@ -15,6 +15,11 @@ const updateModel = (model, body) => { };
 const validation = (req, res, next) => {
   if (req.params.filters !== 'all' && req.params.filters !== 'overdue' && req.params.filters !== 'checked out') return next(err);
   if (req.params.models !== 'loans' && req.params.models !== 'patrons' && req.params.models !== 'books') return next(err);
+}
+
+const getAvailLoans = () => {
+  return Loans.findAll({ where: { returned_on: { $eq: null } } }).then(data => data.map(data => data.book_id))
+    .then(checked => Promise.all([Books.findAll({ where: { id: { $notIn: checked } } }), Patrons.findAll()]))
 }
 
 const setProps = (data, req) => {
@@ -27,11 +32,13 @@ const setProps = (data, req) => {
   } else if (req.params.id) {
     view.today = today;
     view.loans = data[1];
-    view[req.params.models.slice(0, req.params.models.length - 1)] = data[0][0];
+    view[pluralToSingle(req.params.models)] = data[0][0];
     if (view.book) view.title = view.book.title;
     if (view.patron) view.title = view.patron.first_name + ' ' + view.patron.last_name;
     if (view.loan) view.title = 'Patron:Return Book';
     console.log(view);
+  } else if (req.params.models) {
+    view = { loan: {}, books: data[0], patrons: data[1], title: 'New Loan', today: today, due: due };
   }
   return view;
 }
@@ -62,21 +69,17 @@ const query = (req, res) => {
       model = Books;
     } else if (req.params.models === 'loans') condition = lCondition;
     return Promise.all([model.findAll(condition), Loans.findAll(lCondition)]).then(data => setProps(data, req)).then(view => res.render('details', view)).catch(handleErr);
-  } else if (req.models) {
-    if (req.params.models === 'loans') console.log('loan details')
-    if (req.params.models === 'loans') console.log('patrons details')
-    if (req.params.models === 'loans') console.log('books details')
+  } else if (req.params.models) {
+    let view = { [pluralToSingle(req.params.models)]: {}, title: `New ${pluralToSingle(req.params.models)}` };
+    if (req.params.models === 'loans') return getAvailLoans().then(data => setProps(data, req)).then(view => res.render('forms', view)).catch(handleErr);
+    res.render('forms',view);
   }
-
 };
 
 /***************************************************************** ROUTES *****************************************************************/
 router.get('/', (req, res) => res.render('index', { title: 'Express' }));
-
 router.get('/lists/:models/:filter', (req, res) => query(req, res));
-
 router.get('/details/:models/:id', (req, res) => query(req, res));
-
-router.get('/new/:models', (req, res) => res.render('forms', { title: 'Express' }));
+router.get('/new/:models', (req, res) => query(req, res));
 
 module.exports = router;

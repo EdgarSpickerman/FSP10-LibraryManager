@@ -1,6 +1,12 @@
 extends layout
 block Content
   include partials/formError
-  include partials/forms/bookForm
-  include partials/forms/loanForm
-  include partials/forms/patronForm
+
+  if(book)
+    include partials/forms/bookForm
+
+  if(loan)
+    include partials/forms/loanForm
+
+  if(patron)
+    include partials/forms/patronForm

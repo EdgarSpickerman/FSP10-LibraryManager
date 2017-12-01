@@ -12,4 +12,7 @@ form
     label(for='first_published') First Published
     input#first_published(type='text', value=book.first_published, name='first_published')
   p
-    input(type='submit', value='Update')
+    if(loans)
+      input(type='submit', value='Update')
+    else
+      input(type='submit', value='Create')

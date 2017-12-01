@@ -18,4 +18,7 @@ form
     label(for='zip_code') Zip Code
     input#zip_code(type='text', value=patron.zip_code, name='zip_code')
   p
-    input(type='submit', value='Update')
+    if(loans)
+      input(type='submit', value='Update')
+    else
+      input(type='submit', value='Create')
