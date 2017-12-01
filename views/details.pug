@@ -1,9 +1,16 @@
 extends layout
 block Content
   include partials/formError
-  include partials/forms/patronForm
-  include partials/forms/bookForm
-  h2 Loan History
-  include partials/tables/loanTable
 
-  include partials/forms/returnForm
+  if(patron && loans) 
+    include partials/forms/patronForm
+    h2 Loan History
+    include partials/tables/loanTable
+
+  if(book && loans)
+    include partials/forms/bookForm
+    h2 Loan History
+    include partials/tables/loanTable
+
+  if(loan)
+    include partials/forms/returnForm

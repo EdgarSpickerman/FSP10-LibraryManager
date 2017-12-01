@@ -19,10 +19,20 @@ const validation = (req, res, next) => {
 
 const setProps = (data, req) => {
   let view = {};
-  view.title = req.params.filter + ' ' + req.params.models;
-  view.pages = data[1].map((data, index) => index / 10).filter(val => Number.isInteger(val)).map(data => data + 1);
-  if (req.params.filter !== 'all' && req.params.models === 'books') view[req.params.models] = data[0].map(data => data.book)
-  else view[req.params.models] = data[0]
+  if (req.params.filter) {
+    view.title = req.params.filter + ' ' + req.params.models;
+    view.pages = data[1].map((data, index) => index / 10).filter(val => Number.isInteger(val)).map(data => data + 1);
+    if (req.params.filter !== 'all' && req.params.models === 'books') view[req.params.models] = data[0].map(data => data.book)
+    else view[req.params.models] = data[0]
+  } else if (req.params.id) {
+    view.today = today;
+    view.loans = data[1];
+    view[req.params.models.slice(0, req.params.models.length - 1)] = data[0][0];
+    if (view.book) view.title = view.book.title;
+    if (view.patron) view.title = view.patron.first_name + ' ' + view.patron.last_name;
+    if (view.loan) view.title = 'Patron:Return Book';
+    console.log(view);
+  }
   return view;
 }
 
@@ -41,13 +51,17 @@ const query = (req, res) => {
     }
     return Promise.all([getData(model, condition), getData(model, {})]).then(data => setProps(data, req)).then(view => res.render('lists', view)).catch(handleErr);
   } else if (req.params.id) {
-    if (req.params.id && req.params.models === 'loans') console.log('loan details')
-    if (req.params.id && req.params.models === 'patrons') console.log('patrons details')
-    if (req.params.id && req.params.models === 'books') console.log('books details')
-
-    if (req.params.models === 'loans') console.log('loan details')
-    if (req.params.models === 'loans') console.log('patrons details')
-    if (req.params.models === 'loans') console.log('books details')
+    let model = Loans;
+    let lCondition = { include: [Books, Patrons], where: { id: { $eq: req.params.id } } };
+    let condition = { where: { id: { $eq: req.params.id } } };
+    if (req.params.models === 'patrons') {
+      lCondition = { include: [Books, Patrons], where: { patron_id: { $eq: req.params.id } } };
+      model = Patrons;
+    } else if (req.params.models === 'books') {
+      lCondition = { include: [Books, Patrons], where: { book_id: { $eq: req.params.id } } };
+      model = Books;
+    } else if (req.params.models === 'loans') condition = lCondition;
+    return Promise.all([model.findAll(condition), Loans.findAll(lCondition)]).then(data => setProps(data, req)).then(view => res.render('details', view)).catch(handleErr);
   } else if (req.models) {
     if (req.params.models === 'loans') console.log('loan details')
     if (req.params.models === 'loans') console.log('patrons details')
@@ -61,7 +75,7 @@ router.get('/', (req, res) => res.render('index', { title: 'Express' }));
 
 router.get('/lists/:models/:filter', (req, res) => query(req, res));
 
-router.get('/details/:models/:id', (req, res) => res.render('details', { title: 'Express' }));
+router.get('/details/:models/:id', (req, res) => query(req, res));
 
 router.get('/new/:models', (req, res) => res.render('forms', { title: 'Express' }));
 
