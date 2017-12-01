@@ -10,7 +10,7 @@ p
 p
   strong Return By: 
   | #{loan.return_by}
-form
+form(method='post')
   p
     label(for='returned_on') Returned on:
     input#returned_on(type='text', value=today,  name='returned_on')
