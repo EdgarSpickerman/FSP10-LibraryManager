@@ -2,6 +2,8 @@ extends layout
 block Content
   include partials/button
   include partials/filter
+  if(all)
+    include partials/forms/searchForm
   if(books)
     include partials/tables/bookTable
   if(loans)
