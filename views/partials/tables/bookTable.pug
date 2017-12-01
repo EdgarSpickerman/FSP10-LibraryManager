@@ -6,9 +6,11 @@ table
       th Genre
       th Year Released
   tbody
-    tr
-      td
-        a(href='/details/books/book.id') Harry Potter and the Philosopher's Stone
-      td J.K. Rowling
-      td Fantasy
-      td 1997
+    if(books)
+      each book in books
+        tr
+          td
+            a(href=`/details/books/#{book.id}`) #{book.title}
+          td #{book.author}
+          td #{book.genre}
+          td #{book.first_published}

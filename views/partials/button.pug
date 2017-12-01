@@ -1,4 +1,7 @@
 p
-  a.button(href='/new/books') Create New Book
-  a.button(href='/new/loans') Create New Loan
-  a.button(href='/new/patrons') Create New Patron
+  if(books)
+    a.button(href='/new/books') Create New Book
+  if(loans)
+    a.button(href='/new/loans') Create New Loan
+  if(patrons)
+    a.button(href='/new/patrons') Create New Patron

@@ -1,13 +1,16 @@
 p
   | Filters 
-  a(href='/lists/books/all') All
-  |  
-  a(href='/lists/books/overdue') Overdue
-  |  
-  a(href='/lists/books/checked out') Checked Out
-  |
-  a(href='/lists/loans/all') All
-  |  
-  a(href='/lists/loans/overdue') Overdue
-  |  
-  a(href='/lists/loans/checked out') Checked Out
+
+  if(books)
+    a(href='/lists/books/all') All
+    |  
+    a(href='/lists/books/overdue') Overdue
+    |  
+    a(href='/lists/books/checked out') Checked Out
+
+  if(loans)
+    a(href='/lists/loans/all') All
+    |  
+    a(href='/lists/loans/overdue') Overdue
+    |  
+    a(href='/lists/loans/checked out') Checked Out
