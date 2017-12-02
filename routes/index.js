@@ -14,19 +14,31 @@ const handleErr = (err) => console.log(err);
 
 const query = (req, res, errors, next) => {
   if (!validatePath(req)) res.sendStatus(404);
-  let condition = {};
-  let fCond = {};
+  let cond = {};
+  let pCond = {}
+  let model = Loans;
   if (req.params.filter) {
-    let model = Loans;
-    if (req.params.filter === 'all' && req.params.models === 'loans') condition = { include: [Books, Patrons] };
+    if (req.params.filter === 'all' && req.params.models === 'loans') {
+      cond = { include: [Books, Patrons] };
+      pCond = { include: [Books, Patrons] };
+    }
     if (req.params.filter === 'all' && req.params.models === 'patrons') model = Patrons;
     if (req.params.filter === 'all' && req.params.models === 'books') model = Books;
-    if (req.params.filter === 'overdue') condition = { include: [Books, Patrons], where: { returned_on: { $eq: null }, return_by: { $lt: today } } };
-    if (req.params.filter === 'checked out') condition = { include: [Books, Patrons], where: { returned_on: { $eq: null } } };
-    return getData(model, condition).then(data => setProps(data, req))
+    if (req.params.filter === 'overdue') {
+      cond = { include: [Books, Patrons], where: { returned_on: { $eq: null }, return_by: { $lt: today } } };
+      pCond = { include: [Books, Patrons], where: { returned_on: { $eq: null }, return_by: { $lt: today } } };
+    }
+    if (req.params.filter === 'checked out') {
+      cond = { include: [Books, Patrons], where: { returned_on: { $eq: null } } };
+      pCond = { include: [Books, Patrons], where: { returned_on: { $eq: null } } };
+    }
+    if (req.query.page) {
+      cond.limit = 10;
+      cond.offset = 10 * (req.query.page - 1);
+    }
+    return Promise.all([getData(model, cond), getData(model, pCond)]).then(data => setProps(data, req))
       .then(view => res.render('lists', view)).catch(handleErr);
   } else if (req.params.id) {
-    let model = Loans;
     let lCondition = { include: [Books, Patrons], where: { id: { $eq: req.params.id } } };
     let condition = { where: { id: { $eq: req.params.id } } };
     if (req.params.models === 'patrons') {
@@ -54,9 +66,9 @@ const setProps = (data, req, errors) => {
   let view = {};
   if (req.params.filter) {
     view.title = req.params.filter + ' ' + req.params.models;
-    view.pages = data.map((data, index) => index / 10).filter(val => Number.isInteger(val)).map(data => data + 1);
-    if (req.params.filter !== 'all' && req.params.models === 'books') view[req.params.models] = data.map(data => data.book)
-    else view[req.params.models] = data
+    view.pages = data[1].map((data, index) => index / 10).filter(val => Number.isInteger(val)).map(val => val + 1);
+    if (req.params.filter !== 'all' && req.params.models === 'books') view[req.params.models] = data[0].map(data => data.book)
+    else view[req.params.models] = data[0]
     if (req.params.filter === 'all') view.all = true;
   } else if (req.params.id) {
     view = { today: today, loans: data[1], [pluralToSingle(req.params.models)]: data[0][0] }
@@ -69,17 +81,14 @@ const setProps = (data, req, errors) => {
     }
     if (req.params.models === 'loans' && errors.length > 0) {
       return Loans.findAll({ where: { id: { $eq: req.params.id } }, include: [Books, Patrons] })
-        .then(data => {
-          view.loan = data[0];
-          return view;
-        })
+        .then(data => view.loan = data[0]).then(() => view);
     }
   } else if (req.params.models) {
     view = { loan: {}, books: data[0], patrons: data[1], title: 'New Loan', today: today, due: due };
     if (errors.length > 0) {
       view.errors = errors;
       view.loan = req.body;
-    } //need a setProp for the searching
+    }
   }
   return view;
 }
@@ -99,9 +108,7 @@ const updateOrCreate = (req, res, next) => {
   if (req.params.id) {
     return model.findAll({ where: { id: { $eq: req.params.id } } }).then(data => data[0].update(req.body))
       .then(() => res.redirect(link(req))).catch(err => handlePostErr(err, req, res))
-  } else {
-    return model.create(req.body).then(() => res.redirect(link(req))).catch(err => handlePostErr(err, req, res))
-  }
+  } else return model.create(req.body).then(() => res.redirect(link(req))).catch(err => handlePostErr(err, req, res))
 }
 
 const searchfor = (req, res) => {
@@ -110,9 +117,7 @@ const searchfor = (req, res) => {
   if (req.params.models === 'books') model = Books;
   else if (req.params.models === 'patrons') model = Patrons;
   for (prop in req.query) {
-    if (req.query[prop] !== '') {
-      condition.where[prop] = { $like: `%${req.query[prop]}%` };
-    }
+    if (req.query[prop] !== '') condition.where[prop] = { $like: `%${req.query[prop]}%` };
   }
   if (req.params.models === 'loans') {
     condition.include = [{ model: Books, where: {} }, { model: Patrons, where: {} }];
